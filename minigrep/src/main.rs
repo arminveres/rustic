@@ -1,6 +1,7 @@
 use minigrep::{run, Config};
 use std::{env, process};
 
+// TODO: could use clap to parse our arguments
 // use clap::Parser;
 // #[derive(clap::Parser)]
 // pub struct Config {
@@ -17,10 +18,8 @@ fn main() {
 
     // Use args instead of args_os (which would accept utf-8 strings), because it returs Strings,
     // which are easier to work with
-    let args = env::args().collect::<Vec<String>>(); // collect is one of those functions that need explicit type
-                                                     // annotations
-
-    let config = Config::build(&args).unwrap_or_else(|err| {
+    // Pass the env args iterator to the config!
+    let config = Config::build(env::args()).unwrap_or_else(|err| {
         eprintln!(
             "Problem parsing arguments: {err}.
 Usage: [query] [path] ..

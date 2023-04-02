@@ -3,34 +3,33 @@ use std::{env, error::Error, fs};
 // I chose to try it with lifetimes, the book uses Strings. It argues, that while cloning the
 // string slice references would be later, using the Strings is easier to handle... let's see !
 #[derive(Debug)]
-pub struct Config<'a> {
-    query: &'a str,
+pub struct Config {
+    query: String,
     file_path: std::path::PathBuf,
     ignore_case: bool,
 }
 
-impl<'a> Config<'a> {
-    pub fn build(args: &'a [String]) -> Result<Config, &str> {
-        if args.len() < 3 {
-            return Err("not enough arguments");
-        }
+impl Config {
+    pub fn build(mut args: impl Iterator<Item = String>) -> Result<Config, &'static str> {
+        args.next(); // skip first position
 
-        let query = &args[1];
-        let file_path = &args[2];
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a query string"),
+        };
 
-        // NOTE: (aver) another possibility: https://rust-cli.github.io/book/tutorial/cli-args.html
-        // let query = env::args().nth(1).expect("No query given");
-        // let file_path = env::args().nth(2).expect("No path given");
+        let file_path = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a file path"),
+        };
 
-        let mut ignore_case = env::var("MINIGREP_IGNORE_CASE").is_ok();
-
-        match args.get(3) {
+        let ignore_case = match args.next() {
             Some(arg) => match arg.as_str() {
-                "-i" | "--ignore-case" => ignore_case = true,
-                _ => {}
+                "-i" | "--ignore-case" => true,
+                _ => env::var("MINIGREP_IGNORE_CASE").is_ok(), // or eprintln!("Error, unknown key")
             },
-            None => {}
-        }
+            None => env::var("MINIGREP_IGNORE_CASE").is_ok(),
+        };
 
         Ok(Self {
             query,
@@ -59,29 +58,43 @@ pub fn search<'a>(
     query: &str,
     contents: &'a str, // contents will be needing the string slices for its lifetime, not query
 ) -> Vec<&'a str> {
-    let mut results = Vec::new();
-    for line in contents.lines() {
-        if line.contains(query) {
-            results.push(line);
-        }
-    }
-    results
+    // NOTE: Here we require mutable states, while with the lower iterator and closure based we don't and
+    // directly return the results
+    /*
+     let mut results = Vec::new();
+     for line in contents.lines() {
+         if line.contains(query) {
+             results.push(line);
+         }
+     }
+     results
+    */
+    contents
+        .lines()
+        .filter(|line| line.contains(query))
+        .collect()
 }
 
 pub fn case_insensitive_search<'a>(
     query: &str,
     contents: &'a str, // contents will be needing the string slices for its lifetime, not query
 ) -> Vec<&'a str> {
-    let query = query.to_lowercase();
-    let mut results = Vec::new();
+    /*
+     let query = query.to_lowercase();
+     let mut results = Vec::new();
 
-    for line in contents.lines() {
-        if line.to_lowercase().contains(&query) {
-            results.push(line);
-        }
-    }
+     for line in contents.lines() {
+         if line.to_lowercase().contains(&query) {
+             results.push(line);
+         }
+     }
 
-    results
+     results
+    */
+    contents
+        .lines()
+        .filter(|line| line.to_lowercase().contains(query.to_lowercase().as_str()))
+        .collect()
 }
 
 #[cfg(test)]
