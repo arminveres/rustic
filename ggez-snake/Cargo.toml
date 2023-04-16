@@ -1,0 +1,11 @@
+[package]
+name = "ggez-snake"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+getrandom = "0.2.9"
+ggez = "0.9.0-rc0" # necessary, since 0.8.1 is incompatible with newer toolchains >1.67
+oorandom = "11.1.3"
