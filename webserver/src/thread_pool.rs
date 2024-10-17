@@ -1,7 +1,8 @@
-use std::{
-    sync::{mpsc, Arc, Mutex},
-    thread,
-};
+use std::sync::{mpsc, Arc, Mutex};
+
+use worker::Worker;
+
+mod worker;
 
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
@@ -38,23 +39,5 @@ impl ThreadPool {
     {
         let job = Box::new(f);
         self.sender.send(job).unwrap();
-    }
-}
-
-struct Worker {
-    id: usize,
-    // NOTE(aver): in a production environment, `std::thread::Builder` and the `spawn` method would
-    // be more sensible, as it handles OS error, in case threads cannot be created.
-    thread: thread::JoinHandle<()>,
-}
-
-impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Self {
-        let thread = thread::spawn(move || loop {
-            let job = receiver.lock().unwrap().recv().unwrap();
-            println!("Worker {id} got a job; executing...");
-            job();
-        });
-        Self { id, thread }
     }
 }
