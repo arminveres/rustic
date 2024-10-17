@@ -10,17 +10,22 @@ mod thread_pool;
 
 use thread_pool::ThreadPool;
 
+const IP: &str = "127.0.0.1";
+const PORT: usize = 7878;
+const POOL_SIZE: usize = 4;
+
 fn main() {
-    let address = "127.0.0.1:7878";
-    let listener = TcpListener::bind(address).unwrap();
-    let pool = match ThreadPool::build(4) {
+    let address = format!("{IP}:{PORT}");
+    let listener = TcpListener::bind(&address).unwrap();
+
+    let pool = match ThreadPool::build(POOL_SIZE) {
         Ok(pool) => pool,
         Err(err) => panic!("Got error {err:?}"),
     };
 
     println!("Address open at: {address}");
 
-    for stream in listener.incoming() {
+    for stream in listener.incoming().take(2) {
         let stream = stream.unwrap();
 
         pool.execute(|| handle_connection(stream));
